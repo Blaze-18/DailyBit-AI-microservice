@@ -1,7 +1,7 @@
 # app/routes/kb.py
 from fastapi import APIRouter, HTTPException
 from app.models.topic import Topic
-from app.services.kb_service import kb_service  # Import the service instance
+from app.services.topic_service import kb_service  # Import the service instance
 
 router = APIRouter()
 

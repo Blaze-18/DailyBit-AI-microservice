@@ -13,7 +13,7 @@ class Settings:
     # Model Configuration
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     MODEL_NAME: str = os.getenv("MODEL_NAME", "openai/gpt-oss-120b")
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5" # Updated embedding model
 
     # Logging Configuration
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")

@@ -3,6 +3,7 @@ from typing import Dict, List
 import uuid
 import chromadb
 from chromadb.config import Settings
+from chromadb.errors import NotFoundError
 from sentence_transformers import SentenceTransformer
 
 from app.core.config import settings
@@ -10,10 +11,14 @@ from app.models.topic import Topic, Category, Difficulty  # Import the NEW model
 
 # Initialize ChromaDB client
 chroma_client = chromadb.PersistentClient(path=settings.CHROMA_DB_PATH)
-collection = chroma_client.get_or_create_collection(
-    name="topics",
-    metadata={"hnsw:space": "cosine"}
-)
+try:
+    topic_collection = chroma_client.get_collection("topics")
+except NotFoundError:
+    # Create the collection if it doesn't exist
+    topic_collection = chroma_client.create_collection(
+        name="topics",
+        metadata={"hnsw:space": "cosine"}
+    )
 
 # Initialize embedding model
 embedding_model = SentenceTransformer(settings.EMBEDDING_MODEL)
@@ -221,7 +226,7 @@ class KnowledgeBaseService:
             metadatas.append(chunk["metadata"])
 
         # 4. Upsert the batch into ChromaDB
-        collection.upsert(
+        topic_collection.upsert(
             ids=ids,
             embeddings=embeddings,
             documents=documents,
