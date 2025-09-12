@@ -8,6 +8,3 @@ __pycache__/
 .vscode/
 /env
 chroma_db/
-daily-bit-ai/.env
-daily-bit-ai/chroma_db/
-daily-bit-ai/env/
