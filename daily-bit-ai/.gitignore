@@ -7,3 +7,6 @@ __pycache__/
 *.sqlite3
 .vscode/
 /env
+daily-bit-ai/.env
+daily-bit-ai/chroma_db/
+daily-bit-ai/env/
