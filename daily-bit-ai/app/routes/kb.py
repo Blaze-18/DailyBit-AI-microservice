@@ -1,6 +1,6 @@
 # app/routes/kb.py
-from fastapi import APIRouter, HTTPException, Depends
-from app.models.topic import TopicJSON
+from fastapi import APIRouter, HTTPException
+from app.models.topic import Topic
 from app.services.kb_service import kb_service  # Import the service instance
 
 router = APIRouter()
@@ -9,7 +9,7 @@ router = APIRouter()
 # router = APIRouter(prefix="/kb", tags=["knowledge base"])
 
 @router.post("/ingest", summary="Ingest a new topic into the knowledge base")
-async def ingest_topic(topic_data: TopicJSON):
+async def ingest_topic(topic_data: Topic):
     """
     Accepts a topic JSON, chunks it, generates embeddings, and stores them in the vector database.
     """
