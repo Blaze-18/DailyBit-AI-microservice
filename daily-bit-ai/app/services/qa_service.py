@@ -46,10 +46,52 @@ class QAService:
             print(f"Error generating embedding: {e}")
             raise
     
-    def retrieve_relevant_chunks(self, query: str, collection_type: str = "topics", n_results: int = 5) -> List[Dict]:
+    def parse_context(self, context: Optional[str]) -> Dict:
         """
-        Retrieve relevant chunks from the knowledge base based on user query.
+        Parse the context parameter into collection type and filter.
+        Returns: {"collection_type": "topics"|"problems", "filters": Dict}
         """
+        if not context:
+            return {"collection_type": "topics", "filters": None}
+        
+        # Parse context format: "topic:Linked List" or "problem:Two Sum"
+        if context.startswith("topic:"):
+            topic_name = context[6:].strip()  # Remove "topic:" prefix
+            return {
+                "collection_type": "topics",
+                "filters": {"topic": topic_name}
+            }
+        elif context.startswith("problem:"):
+            problem_ref = context[8:].strip()  # Remove "problem:" prefix
+            # Could be problem ID or title
+            return {
+                "collection_type": "problems",
+                "filters": {"$or": [{"title": problem_ref}, {"problem_id": problem_ref}]}
+            }
+        else:
+            # Default to topics with the context as topic name
+            return {
+                "collection_type": "topics", 
+                "filters": {"topic": context}
+            }
+    
+    def retrieve_relevant_chunks_with_context(
+        self, 
+        query: str, 
+        context: Optional[str] = None,
+        n_results: int = 5
+    ) -> List[Dict]:
+        """
+        Retrieve chunks with optional context filtering.
+        """
+        # Parse the context parameter
+        context_info = self.parse_context(context)
+        collection_type = context_info["collection_type"]
+        filters = context_info["filters"]
+        
+        print(f"DEBUG: Collection type: {collection_type}")
+        print(f"DEBUG: Filters: {filters}")
+        
         try:
             # Get the appropriate collection
             if collection_type == "topics":
@@ -65,10 +107,11 @@ class QAService:
             # Generate embedding for the query
             query_embedding = self.generate_embedding(query)
             
-            # Query the vector database
+            # Query with optional filtering
             results = collection.query(
                 query_embeddings=[query_embedding],
                 n_results=n_results,
+                where=filters,  # Apply context filters
                 include=["documents", "metadatas", "distances"]
             )
             
@@ -77,6 +120,7 @@ class QAService:
             docs = results.get("documents")
             dists = results.get("distances")
             metas = results.get("metadatas")
+            
             if docs and docs[0] is not None and dists and dists[0] is not None and metas and metas[0] is not None:
                 for i in range(len(docs[0])):
                     similarity_score = 1 - dists[0][i]  # Convert distance to similarity
@@ -85,7 +129,8 @@ class QAService:
                         "content": docs[0][i],
                         "metadata": metas[0][i],
                         "similarity_score": round(similarity_score, 4),
-                        "is_relevant": similarity_score > 0.7  # Threshold for relevance
+                        "is_relevant": similarity_score > 0.7,  # Threshold for relevance
+                        "context_used": context
                     })
             else:
                 print("No results found or results are None.")
@@ -93,8 +138,15 @@ class QAService:
             return retrieved_chunks
             
         except Exception as e:
-            print(f"Error retrieving chunks: {e}")
+            print(f"Error retrieving chunks with context: {e}")
             raise
+    
+    def retrieve_relevant_chunks(self, query: str, collection_type: str = "topics", n_results: int = 5) -> List[Dict]:
+        """
+        Retrieve relevant chunks from the knowledge base based on user query.
+        (Kept for backward compatibility)
+        """
+        return self.retrieve_relevant_chunks_with_context(query, None, n_results)
     
     def determine_collection_type(self, query: str) -> str:
         """Simple heuristic to determine if the query is about a topic or a problem."""
