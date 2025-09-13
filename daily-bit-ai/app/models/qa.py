@@ -20,3 +20,15 @@ class SearchResponse(BaseModel):
     chunks: List[Dict]
     top_similarity_score: float
     context_used: Optional[str] = None
+
+class LLMResponse(BaseModel):
+    query: str
+    context_used: Optional[str] = None
+    retrieved_chunks: List[Dict]
+    llm_response: str
+    is_successful: bool
+    top_similarity_score: float
+
+class FullRAGResponse(BaseModel):
+    search_results: SearchResponse
+    llm_response: LLMResponse

@@ -5,7 +5,7 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.errors import NotFoundError
 from app.core.config import settings
-
+from app.services.llm_service import llm_service
 # Initialize clients
 embedding_model = SentenceTransformer(settings.EMBEDDING_MODEL)
 chroma_client = chromadb.PersistentClient(path=settings.CHROMA_DB_PATH)
@@ -174,6 +174,33 @@ class QAService:
         
         # Check if any chunk meets the similarity threshold
         return any(chunk['similarity_score'] >= similarity_threshold for chunk in chunks)
+    
+    def generate_llm_response(self, query: str, chunks: List[Dict]) -> str:
+        """
+        Generate LLM response based on retrieved chunks.
+        """
+        if not chunks:
+            return "I couldn't find relevant information to answer your question. Please try asking about a specific programming topic or problem."
+        
+        # Format the context from retrieved chunks
+        context = self._format_context_for_llm(chunks)
+        
+        # Generate response using LLM with context
+        return llm_service.generate_response(query, context)
+
+    def _format_context_for_llm(self, chunks: List[Dict]) -> str:
+        """
+        Format retrieved chunks into a coherent context for the LLM.
+        """
+        context = "Relevant information from knowledge base:\n\n"
+        
+        for i, chunk in enumerate(chunks, 1):
+            context += f"[Source {i} - {chunk['metadata'].get('chunk_type', 'unknown')}]\n"
+            context += f"{chunk['content']}\n\n"
+            context += f"Similarity score: {chunk['similarity_score']:.3f}\n"
+            context += "---\n\n"
+        
+        return context
 
 # Create singleton instance
 qa_service = QAService()
