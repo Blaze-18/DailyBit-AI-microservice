@@ -64,6 +64,7 @@ Frontend → FastAPI → RAG Pipeline → ChromaDB → Groq LLM
     - Redoc: http://localhost:8000/redoc
 
 ## 🗂️ Project Structure
+```text
 daily-bit-ai/
 ├── app/
 │   ├── core/
@@ -87,3 +88,4 @@ daily-bit-ai/
 ├── requirements.txt          # Python dependencies
 ├── .env.example             # Environment template
 └── README.md                # This file
+```
