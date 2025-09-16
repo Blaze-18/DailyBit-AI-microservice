@@ -30,7 +30,7 @@ Frontend → FastAPI → RAG Pipeline → ChromaDB → Groq LLM
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/Blaze-18/DailyBit-AI-microservice.git
    cd daily-bit-ai
    ```
 2. **Set up virtual environment**

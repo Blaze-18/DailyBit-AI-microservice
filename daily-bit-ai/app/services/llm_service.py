@@ -1,5 +1,6 @@
 # app/services/llm_service.py
-from typing import Dict
+import json
+from typing import Dict, List
 from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage, SystemMessage
 from app.core.config import settings
@@ -105,6 +106,89 @@ class LLMService:
     def ask_llm_simple(self, question: str) -> str:
         """Simple LLM query without RAG"""
         return self.generate_response(question)
+    
+    async def generate_quiz(self, topic: str, difficulty: str = "intermediate", num_questions: int = 5) -> Dict:
+        """
+        Generate a programming quiz for a specific topic.
+        """
+        prompt = f"""Generate a {difficulty} level programming quiz about {topic} with {num_questions} questions.
+
+        Requirements:
+        1. Each question must be about programming concepts related to {topic}
+        2. Provide 4 multiple choice options (A, B, C, D) for each question
+        3. Mark the correct answer clearly
+        4. Provide a detailed explanation for each correct answer
+        5. Return ONLY valid JSON in this exact format:
+        {{
+            "topic": "{topic}",
+            "difficulty": "{difficulty}",
+            "questions": [
+                {{
+                    "question": "question text",
+                    "options": ["A. option1", "B. option2", "C. option3", "D. option4"],
+                    "correct_answer": "A",
+                    "explanation": "detailed explanation"
+                }}
+            ]
+        }}
+
+        Important: Return ONLY the JSON object, no other text.
+        """
+        
+        try:
+            response = self.generate_response(prompt)
+            
+            # Extract JSON from response
+            json_start = response.find('{')
+            json_end = response.rfind('}') + 1
+            if json_start != -1 and json_end != -1:
+                json_str = response[json_start:json_end]
+                quiz_data = json.loads(json_str)
+                return {"success": True, "quiz": quiz_data}
+            else:
+                return {"success": False, "error": "Failed to parse quiz JSON from LLM response"}
+                
+        except json.JSONDecodeError as e:
+            return {"success": False, "error": f"Invalid JSON response: {str(e)}"}
+        except Exception as e:
+            return {"success": False, "error": f"Quiz generation failed: {str(e)}"}
+    
+    async def evaluate_quiz_answers(self, questions: List[Dict], user_answers: List[str]) -> Dict:
+        """
+        Evaluate user's quiz answers and provide explanations.
+        """
+        if len(user_answers) != len(questions):
+            return {"success": False, "error": "Number of answers doesn't match number of questions"}
+        
+        evaluations = []
+        correct_count = 0
+        
+        for i, (question, user_answer) in enumerate(zip(questions, user_answers)):
+            correct_answer = question['correct_answer']
+            is_correct = user_answer.strip().upper() == correct_answer.strip().upper()
+            
+            if is_correct:
+                correct_count += 1
+            
+            evaluations.append({
+                "question": question['question'],
+                "user_answer": user_answer,
+                "correct_answer": correct_answer,
+                "is_correct": is_correct,
+                "explanation": question['explanation']
+            })
+        
+        score_percentage = (correct_count / len(questions)) * 100
+        
+        return {
+            "success": True,
+            "result": {
+                "total_questions": len(questions),
+                "correct_answers": correct_count,
+                "score_percentage": round(score_percentage, 2),
+                "evaluations": evaluations
+            }
+        }
 
 # Create singleton instance
 llm_service = LLMService()
