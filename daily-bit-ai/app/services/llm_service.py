@@ -42,7 +42,7 @@ class LLMService:
         else:
             # Fallback without context
             human_message = HumanMessage(content=question)
-            response = self.llm.invoke([human_message])
+            response = self.llm.invoke([human_message], response_format={ "type": "json_object" })
         
         content = response.content
         return content if isinstance(content, str) else str(content)
